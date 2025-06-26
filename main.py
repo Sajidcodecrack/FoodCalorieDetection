@@ -2,6 +2,7 @@ from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image
 import google.generativeai as genai
+from fastapi.responses import JSONResponse
 import io
 
 app = FastAPI()
@@ -20,10 +21,15 @@ model = genai.GenerativeModel("gemini-2.0-flash-lite")
 
 @app.post("/analyze-image")
 async def analyze_image(file: UploadFile = File(...)):
-    contents = await file.read()
-    image = Image.open(io.BytesIO(contents))
+    try:
+        contents = await file.read()
+        image = Image.open(io.BytesIO(contents))
 
-    prompt = "What is this food? Give the food name only also Give me the calories per 100g with carbs, fiber, protein, also high or low sugar level in json format"
+        prompt = "What is this food? Give the food name only also Give me the calories per 100g with carbs, fiber, protein, also high or low sugar level in json format"
 
-    response = model.generate_content([image, prompt])
-    return {"result": response.text.strip()}
+        response = model.generate_content([image, prompt])
+        return {"result": response.text.strip()}
+
+    except Exception as e:
+        # This will help you debug errors properly in Postman
+        return JSONResponse(status_code=500, content={"error": str(e)})
